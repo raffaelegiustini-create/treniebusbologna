@@ -88,8 +88,11 @@ const CONNECTIONS = [
 
 const MIME = {
   '.html': 'text/html',
-  '.js': 'application/javascript',
-  '.css': 'text/css',
+  '.js':   'application/javascript',
+  '.css':  'text/css',
+  '.json': 'application/json',
+  '.png':  'image/png',
+  '.ico':  'image/x-icon',
 };
 
 function fetchRfi(placeId, arrivals, cb) {

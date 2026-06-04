@@ -2,7 +2,12 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Treni">
+  <meta name="theme-color" content="#07071a">
+  <link rel="manifest" href="/manifest.json">
   <title>Tabellone Treni</title>
   <style>
     :root {
@@ -16,58 +21,123 @@
       --text: #e8e8ff;
       --dim: #555577;
       --blue: #448aff;
-      --purple: #aa66ff;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
-      width: 100vw; height: 100vh;
-      overflow: hidden;
       background: var(--bg);
       color: var(--text);
       font-family: 'Courier New', monospace;
     }
 
-    /* ── Layout ─────────────────────────────────── */
-    #app {
-      display: grid;
-      grid-template-rows: 52px 1fr 110px;
-      grid-template-columns: 1fr 300px;
-      width: 100vw; height: 100vh;
-      gap: 0;
+    /* ════════════════════════════════════════
+       DESKTOP (>= 768px) — layout fisso 16:9
+    ════════════════════════════════════════ */
+    @media (min-width: 768px) {
+      html, body { width: 100vw; height: 100vh; overflow: hidden; }
+
+      #app {
+        display: grid;
+        grid-template-rows: 52px 1fr 110px;
+        grid-template-columns: 1fr 300px;
+        width: 100vw; height: 100vh;
+      }
+
+      header { grid-column: 1 / -1; }
+      #trains-panel { grid-column: 1; grid-row: 2; overflow: hidden; }
+      #conn-panel   { grid-column: 2; grid-row: 2; border-left: 1px solid var(--border); }
+      #bus-panel    { grid-column: 1 / -1; grid-row: 3; }
+
+      .place-row { display: flex; }
+      #clock { font-size: 22px; }
+      #date  { display: block; }
+      .header-spacer { flex: 1; }
+
+      /* conn sidebar */
+      #connections-grid { flex-direction: column; }
+      .conn-card { flex: 1; }
+
+      /* table */
+      table { table-layout: fixed; }
+      th:nth-child(1), td:nth-child(1) { width: 17%; }
+      th:nth-child(2), td:nth-child(2) { width: 12%; }
+      th:nth-child(3), td:nth-child(3) { width: 33%; }
+      th:nth-child(4), td:nth-child(4) { width: 19%; }
+      th:nth-child(5), td:nth-child(5) { width: 9%;  text-align: center; }
+      th:nth-child(6), td:nth-child(6) { width: 10%; }
+      .col-train, .col-stato { display: table-cell; }
+    }
+
+    /* ════════════════════════════════════════
+       MOBILE (< 768px) — layout verticale
+    ════════════════════════════════════════ */
+    @media (max-width: 767px) {
+      html, body { min-height: 100vh; overflow-y: auto; }
+
+      #app { display: flex; flex-direction: column; min-height: 100vh; }
+
+      .place-row { display: none; }   /* nasconde il campo ID stazione */
+      #clock { font-size: 18px; }
+      #date  { display: none; }
+      .header-spacer { flex: 1; }
+
+      #trains-panel { flex: 0 0 auto; }
+      #conn-panel {
+        border-top: 1px solid var(--border);
+        border-left: none;
+        flex: 0 0 auto;
+      }
+      #connections-grid { flex-direction: row; overflow-x: auto; }
+      .conn-card { flex: 0 0 200px; }
+
+      #bus-panel { flex: 0 0 auto; margin-top: auto; }
+
+      /* tabella mobile: nascondi colonne secondarie */
+      .col-train, .col-stato { display: none; }
+      th:nth-child(1), td:nth-child(1) { width: 22%; }  /* orario */
+      th:nth-child(3), td:nth-child(3) { width: auto; } /* dest */
+      th:nth-child(4), td:nth-child(4) { width: 26%; }  /* ritardo */
+      th:nth-child(5), td:nth-child(5) { width: 14%; text-align: center; } /* bin */
+
+      .cell-time { font-size: 15px; }
+      .cell-dest { font-size: 13px; }
+      .cell-platform { font-size: 15px; }
+      .bus-time-value { font-size: 16px; }
+      .conn-time { font-size: 18px; }
     }
 
     /* ── Header ─────────────────────────────────── */
     header {
-      grid-column: 1 / -1;
       background: var(--panel);
       border-bottom: 2px solid var(--gold);
       display: flex;
       align-items: center;
-      padding: 0 18px;
-      gap: 14px;
+      padding: 0 14px;
+      gap: 10px;
+      height: 52px;
+      flex-shrink: 0;
     }
 
-    .logo { font-size: 20px; color: var(--gold); font-weight: bold; letter-spacing: 2px; }
+    .logo { font-size: 20px; color: var(--gold); font-weight: bold; }
 
     .station-name {
-      font-size: 17px; font-weight: bold;
+      font-size: 15px; font-weight: bold;
       letter-spacing: 1px; text-transform: uppercase;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
     .tab-btn {
       background: transparent;
       border: 1px solid var(--dim); color: var(--dim);
-      padding: 4px 14px; border-radius: 4px;
+      padding: 4px 12px; border-radius: 4px;
       cursor: pointer; font-family: inherit; font-size: 11px;
       letter-spacing: 1px; text-transform: uppercase; transition: all .2s;
+      white-space: nowrap; flex-shrink: 0;
     }
     .tab-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(245,200,66,.08); }
 
-    .place-row {
-      display: flex; align-items: center; gap: 6px;
-    }
+    .place-row { align-items: center; gap: 6px; flex-shrink: 0; }
     .place-row label { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
     .place-row input {
       background: var(--bg); border: 1px solid var(--border); color: var(--text);
@@ -76,39 +146,27 @@
     .place-row button {
       background: var(--blue); border: none; color: white;
       padding: 3px 10px; font-family: inherit; font-size: 11px;
-      border-radius: 4px; cursor: pointer; letter-spacing: 1px;
+      border-radius: 4px; cursor: pointer;
     }
 
-    .header-spacer { flex: 1; }
-
-    #clock { font-size: 22px; color: var(--gold); font-weight: bold; letter-spacing: 2px; white-space: nowrap; }
-    #date  { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-left: 6px; white-space: nowrap; }
+    #clock { color: var(--gold); font-weight: bold; letter-spacing: 2px; white-space: nowrap; }
+    #date  { font-size: 10px; color: var(--dim); letter-spacing: 1px; white-space: nowrap; }
 
     .status-dot {
-      width: 7px; height: 7px; border-radius: 50%;
+      width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
       background: var(--green); display: inline-block; animation: pulse 2s infinite;
     }
     .status-dot.error { background: var(--red); animation: none; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    #refresh-info { font-size: 10px; color: var(--dim); white-space: nowrap; }
 
-    #refresh-info { font-size: 10px; color: var(--dim); margin-left: 4px; }
-
-    /* ── Left: train table ───────────────────────── */
+    /* ── Train panel ─────────────────────────────── */
     #trains-panel {
-      grid-column: 1;
-      grid-row: 2;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding: 10px 14px 8px 14px;
+      display: flex; flex-direction: column;
+      padding: 10px 14px 8px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      table-layout: fixed;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
     thead th {
       color: var(--gold); font-size: 9px; letter-spacing: 2px;
@@ -116,149 +174,44 @@
       border-bottom: 1px solid var(--gold);
     }
 
-    /* column widths */
-    th:nth-child(1), td:nth-child(1) { width: 17%; }   /* orario */
-    th:nth-child(2), td:nth-child(2) { width: 12%; }   /* treno */
-    th:nth-child(3), td:nth-child(3) { width: 33%; }   /* dest */
-    th:nth-child(4), td:nth-child(4) { width: 19%; }   /* ritardo */
-    th:nth-child(5), td:nth-child(5) { width: 9%; text-align:center; }  /* bin */
-    th:nth-child(6), td:nth-child(6) { width: 10%; }   /* stato */
-
     tbody tr { border-bottom: 1px solid var(--border); }
     tbody tr:hover { background: rgba(255,255,255,.025); }
-
     tbody td { padding: 6px 8px; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .cell-time  { font-size: 18px; font-weight: bold; letter-spacing: 2px; }
-    .cell-train { font-size: 11px; color: var(--dim); }
-    .cell-dest  { font-size: 14px; font-weight: bold; }
-    .cell-delay { font-size: 13px; font-weight: bold; }
+    .cell-time     { font-size: 18px; font-weight: bold; letter-spacing: 2px; }
+    .cell-train    { font-size: 11px; color: var(--dim); }
+    .cell-dest     { font-size: 14px; font-weight: bold; }
+    .cell-delay    { font-size: 13px; font-weight: bold; }
     .cell-platform { font-size: 18px; font-weight: bold; text-align: center; }
-    .cell-status { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; }
+    .cell-status   { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; }
 
-    .delay-ok   { color: var(--green); }
-    .delay-low  { color: var(--orange); }
-    .delay-high { color: var(--red); }
-    .status-ontime   { color: var(--green); }
-    .status-delayed  { color: var(--orange); }
-    .status-cancelled{ color: var(--red); }
-    .status-departed { color: var(--dim); }
+    .delay-ok    { color: var(--green); }
+    .delay-low   { color: var(--orange); }
+    .delay-high  { color: var(--red); }
+    .status-ontime    { color: var(--green); }
+    .status-delayed   { color: var(--orange); }
+    .status-cancelled { color: var(--red); }
+    .status-departed  { color: var(--dim); }
 
     .empty-state { padding: 30px; color: var(--dim); text-align: center; font-size: 13px; }
     .loading     { padding: 40px; color: var(--gold); text-align: center; font-size: 13px; letter-spacing: 3px; animation: pulse 1s infinite; }
 
-    /* ── Bus panel (bottom) ─────────────────────── */
-    #bus-panel {
-      grid-column: 1 / -1;
-      grid-row: 3;
-      border-top: 2px solid var(--border);
-      background: var(--panel);
-      display: flex;
-      align-items: center;
-      padding: 0 18px;
-      gap: 0;
-      overflow: hidden;
-    }
-
-    .bus-label {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 2px;
-      padding-right: 20px;
-      border-right: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .bus-line-badge {
-      background: #ff6633;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-      padding: 3px 12px;
-      border-radius: 4px;
-      letter-spacing: 1px;
-    }
-
-    .bus-stop-name {
-      font-size: 9px;
-      color: var(--dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-top: 2px;
-    }
-
-    .bus-direction {
-      font-size: 9px;
-      color: #ff6633;
-      letter-spacing: 1px;
-    }
-
-    .bus-times {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-left: 20px;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .bus-time-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      padding: 6px 14px;
-      border-radius: 6px;
-      background: rgba(255,102,51,0.06);
-      border: 1px solid rgba(255,102,51,0.2);
-      flex-shrink: 0;
-    }
-
-    .bus-time-item.next {
-      background: rgba(255,102,51,0.18);
-      border-color: #ff6633;
-    }
-
-    .bus-time-value {
-      font-size: 20px;
-      font-weight: bold;
-      letter-spacing: 2px;
-      color: var(--text);
-    }
-
-    .bus-time-item.next .bus-time-value { color: #ff6633; }
-
-    .bus-wait {
-      font-size: 9px;
-      color: var(--dim);
-      letter-spacing: 1px;
-    }
-
-    .bus-time-item.next .bus-wait { color: #ff9966; }
-
-    /* ── Right: connections ──────────────────────── */
+    /* ── Connections ─────────────────────────────── */
     #conn-panel {
-      grid-column: 2;
-      grid-row: 2;
-      border-left: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       overflow: hidden;
-      padding: 10px 10px 8px 10px;
+      padding: 10px 10px 8px;
       gap: 8px;
     }
 
     .conn-header {
       font-size: 9px; letter-spacing: 3px; color: var(--gold);
       text-transform: uppercase; padding-bottom: 6px;
-      border-bottom: 1px solid var(--gold);
-      flex-shrink: 0;
+      border-bottom: 1px solid var(--gold); flex-shrink: 0;
     }
 
     #connections-grid {
       display: flex;
-      flex-direction: column;
       gap: 7px;
       overflow: hidden;
       flex: 1;
@@ -269,39 +222,63 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       gap: 5px;
-      flex: 1;
     }
 
-    .conn-dest {
-      font-size: 13px; font-weight: bold; letter-spacing: 1px;
-      display: flex; align-items: center; gap: 6px; color: var(--text);
-    }
-
-    .conn-main {
-      display: flex; align-items: baseline; gap: 8px;
-    }
-
+    .conn-dest { font-size: 13px; font-weight: bold; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+    .conn-main { display: flex; align-items: baseline; gap: 8px; }
     .conn-time { font-size: 22px; font-weight: bold; letter-spacing: 2px; }
-
-    .conn-num { font-size: 10px; color: var(--dim); }
-
+    .conn-num  { font-size: 10px; color: var(--dim); }
     .conn-delay { font-size: 11px; font-weight: bold; margin-left: auto; }
-
     .conn-platform { font-size: 10px; color: var(--dim); }
-
     .conn-feeder {
       font-size: 10px; color: var(--dim);
-      border-top: 1px dashed var(--border);
-      padding-top: 3px;
-      margin-top: 1px;
+      border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px;
     }
     .conn-feeder-time { color: var(--gold); font-weight: bold; }
     .conn-no-feeder   { color: var(--red); font-size: 10px; border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px; }
-
     .conn-empty { font-size: 11px; color: var(--dim); padding: 8px 0; }
+
+    /* ── Bus panel ───────────────────────────────── */
+    #bus-panel {
+      border-top: 2px solid var(--border);
+      background: var(--panel);
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 0;
+      overflow: hidden; min-height: 90px;
+    }
+
+    .bus-label {
+      display: flex; flex-direction: column; align-items: flex-start;
+      gap: 2px; padding-right: 14px;
+      border-right: 1px solid var(--border); flex-shrink: 0;
+    }
+
+    .bus-line-badge {
+      background: #ff6633; color: white;
+      font-size: 16px; font-weight: bold;
+      padding: 2px 10px; border-radius: 4px; letter-spacing: 1px;
+    }
+
+    .bus-stop-name { font-size: 9px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+    .bus-direction { font-size: 9px; color: #ff6633; letter-spacing: 1px; }
+
+    .bus-times {
+      display: flex; align-items: center; gap: 8px;
+      padding-left: 14px; flex: 1; overflow-x: auto;
+    }
+
+    .bus-time-item {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 6px 12px; border-radius: 6px; flex-shrink: 0;
+      background: rgba(255,102,51,0.06); border: 1px solid rgba(255,102,51,0.2);
+    }
+    .bus-time-item.next { background: rgba(255,102,51,0.18); border-color: #ff6633; }
+    .bus-time-value { font-size: 20px; font-weight: bold; letter-spacing: 2px; }
+    .bus-time-item.next .bus-time-value { color: #ff6633; }
+    .bus-wait { font-size: 9px; color: var(--dim); letter-spacing: 1px; }
+    .bus-time-item.next .bus-wait { color: #ff9966; }
   </style>
 </head>
 <body>
@@ -324,7 +301,6 @@
 
     <span class="status-dot" id="status-dot"></span>
     <span id="refresh-info"></span>
-
     <div id="clock">--:--:--</div>
     <div id="date"></div>
   </header>
@@ -334,7 +310,13 @@
     <div id="content"><div class="loading">CARICAMENTO...</div></div>
   </div>
 
-  <!-- Bus panel -->
+  <!-- Connections -->
+  <div id="conn-panel">
+    <div class="conn-header">Coincidenze · Bologna C.le</div>
+    <div id="connections-grid"><div class="conn-empty">Caricamento...</div></div>
+  </div>
+
+  <!-- Bus -->
   <div id="bus-panel">
     <div class="bus-label">
       <div style="display:flex;gap:5px">
@@ -349,12 +331,6 @@
     </div>
   </div>
 
-  <!-- Connections sidebar -->
-  <div id="conn-panel">
-    <div class="conn-header">Coincidenze · Bologna C.le</div>
-    <div id="connections-grid"><div class="conn-empty">Caricamento...</div></div>
-  </div>
-
 </div>
 
 <script>
@@ -362,8 +338,8 @@
   let placeId = 679;
   let refreshTimer = null;
   const REFRESH_INTERVAL = 30000;
+  const isMobile = () => window.innerWidth < 768;
 
-  // Clock
   function updateClock() {
     const now = new Date();
     document.getElementById('clock').textContent = now.toLocaleTimeString('it-IT');
@@ -397,13 +373,11 @@
     return `<span class="${cls}">+${n} min</span>`;
   }
 
-  // How many rows can fit in the table panel
   function maxRows() {
+    if (isMobile()) return 12;
     const panel = document.getElementById('trains-panel');
-    const h = panel.clientHeight;
-    const ROW_H = 38; // approximate row height in px
-    const HEADER_H = 28;
-    return Math.max(1, Math.floor((h - HEADER_H) / ROW_H));
+    const ROW_H = 38, HEADER_H = 28;
+    return Math.max(1, Math.floor((panel.clientHeight - HEADER_H) / ROW_H));
   }
 
   function renderTable(trains) {
@@ -414,8 +388,12 @@
     const visible = trains.slice(0, maxRows());
 
     let html = `<table><thead><tr>
-      <th>Orario</th><th>Treno</th><th>${dir}</th>
-      <th>Ritardo</th><th style="text-align:center">Bin.</th><th>Stato</th>
+      <th>Orario</th>
+      <th class="col-train">Treno</th>
+      <th>${dir}</th>
+      <th>Ritardo</th>
+      <th style="text-align:center">Bin.</th>
+      <th class="col-stato">Stato</th>
     </tr></thead><tbody>`;
 
     for (const t of visible) {
@@ -423,24 +401,22 @@
       let stTxt = '', stCls = '';
       if (t.status) {
         const s = t.status.toLowerCase();
-        if (s.includes('soppres') || s.includes('cancel')) { stTxt='Soppresso'; stCls='status-cancelled'; }
-        else if (s.includes('partit') || s.includes('arriv')) { stTxt = isArrivals?'Arrivato':'Partito'; stCls='status-departed'; }
-        else { stTxt = t.status; stCls = 'status-ontime'; }
-      } else if (!isNaN(d) && d > 0) { stTxt='In ritardo'; stCls='status-delayed'; }
+        if (s.includes('soppres')||s.includes('cancel'))  { stTxt='Soppresso'; stCls='status-cancelled'; }
+        else if (s.includes('partit')||s.includes('arriv')){ stTxt=isArrivals?'Arrivato':'Partito'; stCls='status-departed'; }
+        else { stTxt=t.status; stCls='status-ontime'; }
+      } else if (!isNaN(d) && d > 0) { stTxt='Ritardo'; stCls='status-delayed'; }
       else { stTxt='Regolare'; stCls='status-ontime'; }
 
       html += `<tr>
         <td class="cell-time">${t.time||'--:--'}</td>
-        <td class="cell-train">${t.trainNum||''}</td>
+        <td class="cell-train col-train">${t.trainNum||''}</td>
         <td class="cell-dest" title="${t.destination||''}">${t.destination||'—'}</td>
         <td class="cell-delay">${delayHtml(t.delay)}</td>
         <td class="cell-platform">${t.platform||'—'}</td>
-        <td class="cell-status ${stCls}">${stTxt}</td>
+        <td class="cell-status ${stCls} col-stato">${stTxt}</td>
       </tr>`;
     }
-
-    html += '</tbody></table>';
-    return html;
+    return html + '</tbody></table>';
   }
 
   async function fetchData() {
@@ -449,17 +425,14 @@
       const res = await fetch(`/api/trains?placeId=${placeId}&arrivals=${isArrivals}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-
       if (data.station && data.station !== 'Stazione')
         document.getElementById('station-name').textContent = data.station;
-
       document.getElementById('content').innerHTML = renderTable(data.trains);
       dot.className = 'status-dot';
       document.getElementById('refresh-info').textContent =
-        `${new Date().toLocaleTimeString('it-IT')} · ${data.trains.length} treni`;
+        `${new Date().toLocaleTimeString('it-IT')} · ${data.trains.length}`;
     } catch (err) {
       dot.className = 'status-dot error';
-      document.getElementById('refresh-info').textContent = `Errore`;
       document.getElementById('content').innerHTML =
         `<div class="empty-state" style="color:var(--red)">Errore: ${err.message}</div>`;
     }
@@ -481,11 +454,9 @@
       const dHtml = (isNaN(n)||n===0)
         ? '<span class="delay-ok">In orario</span>'
         : `<span class="${n<=5?'delay-low':'delay-high'}">+${n}′</span>`;
-
       const feeder = c.feeder
-        ? `<div class="conn-feeder">↳ Prendi <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'} → Bologna C.le</div>`
+        ? `<div class="conn-feeder">↳ Prendi <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'}</div>`
         : `<div class="conn-no-feeder">Nessun locale in tempo</div>`;
-
       return `<div class="conn-card">
         <div class="conn-dest">${DEST_ICONS[c.destination]||'🚄'} ${c.destination}</div>
         <div class="conn-main">
@@ -493,7 +464,7 @@
           <span class="conn-num">${ld.trainNum}</span>
           <span class="conn-delay">${dHtml}</span>
         </div>
-        <div class="conn-platform">Bin. Bologna C.le: ${ld.platform||'?'}</div>
+        <div class="conn-platform">Bin. ${ld.platform||'?'}</div>
         ${feeder}
       </div>`;
     }).join('');
@@ -510,47 +481,42 @@
   function minutesUntil(hhmm) {
     const now = new Date();
     const [h, m] = hhmm.split(':').map(Number);
-    const depMin = h * 60 + m;
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    return depMin - nowMin;
+    return (h * 60 + m) - (now.getHours() * 60 + now.getMinutes());
   }
 
   function renderBus(data) {
     const container = document.getElementById('bus-times');
     const buses = data.buses || [];
     if (!buses.length) {
-      container.innerHTML = '<div style="color:var(--dim);font-size:12px">Nessuna corsa disponibile</div>';
+      container.innerHTML = '<div style="color:var(--dim);font-size:12px">Nessuna corsa</div>';
       return;
     }
-    const realtimeBadge = data.realtime
-      ? '<span style="font-size:9px;color:#00e676;letter-spacing:1px;margin-left:auto;padding-right:4px">● LIVE</span>'
-      : '<span style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-left:auto;padding-right:4px">PREVISTO</span>';
-
+    const badge = data.realtime
+      ? '<span style="font-size:9px;color:#00e676;letter-spacing:1px;margin-left:auto;flex-shrink:0">● LIVE</span>'
+      : '<span style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-left:auto;flex-shrink:0">PREVISTO</span>';
     container.innerHTML = buses.map((b, i) => {
       const wait = minutesUntil(b.time);
-      const waitLabel = wait <= 0 ? 'ora' : wait === 1 ? '1 min' : `${wait} min`;
+      const waitLabel = wait <= 0 ? 'ora' : `${wait} min`;
       const isLive = b.type === 'DaSatellite';
       const lineColor = b.line === '96' ? '#1a86f2' : '#ff6633';
       return `<div class="bus-time-item ${i === 0 ? 'next' : ''}">
-        <div style="font-size:9px;font-weight:bold;color:${lineColor};letter-spacing:1px">${b.line}</div>
+        <div style="font-size:9px;font-weight:bold;color:${lineColor}">${b.line}</div>
         <div class="bus-time-value">${b.time}</div>
         <div class="bus-wait">${isLive ? '📡 ' : ''}${waitLabel}</div>
       </div>`;
-    }).join('') + realtimeBadge;
+    }).join('') + badge;
   }
 
   async function fetchBus() {
     try {
       const res = await fetch('/api/bus');
-      const data = await res.json();
-      renderBus(data);
+      renderBus(await res.json());
     } catch (e) {}
   }
 
   fetchData();
   fetchConnections();
   fetchBus();
-  // Bus si aggiorna ogni minuto (è offline, ma ricalcola i "minuti mancanti")
   setInterval(fetchBus, 60000);
 </script>
 </body>

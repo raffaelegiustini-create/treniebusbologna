@@ -246,7 +246,7 @@
       background: var(--panel);
       display: flex; align-items: center;
       padding: 0 14px; gap: 0;
-      overflow: hidden; min-height: 90px;
+      overflow: visible; min-height: 90px;
     }
 
     .bus-label {
@@ -267,6 +267,7 @@
     .bus-times {
       display: flex; align-items: center; gap: 8px;
       padding-left: 14px; flex: 1; overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .bus-time-item {

@@ -227,14 +227,18 @@
     }
 
     .conn-dest { font-size: 13px; font-weight: bold; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
+    .conn-option { display: flex; flex-direction: column; gap: 3px; padding-top: 5px; }
+    .conn-option + .conn-option { border-top: 1px solid var(--border); margin-top: 2px; }
+    .conn-option:not(.conn-best) { opacity: 0.62; }
+    .conn-option:not(.conn-best) .conn-time { font-size: 17px; }
     .conn-main { display: flex; align-items: baseline; gap: 8px; }
     .conn-time { font-size: 22px; font-weight: bold; letter-spacing: 2px; }
     .conn-num  { font-size: 10px; color: var(--dim); }
+    .conn-bin  { font-size: 10px; color: var(--dim); }
     .conn-delay { font-size: 11px; font-weight: bold; margin-left: auto; }
     .conn-platform { font-size: 10px; color: var(--dim); }
     .conn-feeder {
       font-size: 10px; color: var(--dim);
-      border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px;
     }
     .conn-feeder-time { color: var(--gold); font-weight: bold; }
     .conn-no-feeder   { color: var(--red); font-size: 10px; border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px; }
@@ -473,24 +477,38 @@
       grid.innerHTML = '<div class="conn-empty">Nessuna coincidenza trovata</div>';
       return;
     }
-    grid.innerHTML = connections.map(c => {
-      const ld = c.ldTrain;
-      const n = parseInt(ld.delay);
-      const dHtml = (isNaN(n)||n===0)
-        ? '<span class="delay-ok">In orario</span>'
-        : `<span class="${n<=5?'delay-low':'delay-high'}">+${n}′</span>`;
-      const feeder = c.feeder
-        ? `<div class="conn-feeder">↳ Prendi <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'}</div>`
-        : `<div class="conn-no-feeder">Nessun locale in tempo</div>`;
+
+    // Group options by destination (the server may return up to 2 per destination)
+    const byDest = {};
+    const order = [];
+    for (const c of connections) {
+      if (!byDest[c.destination]) { byDest[c.destination] = []; order.push(c.destination); }
+      byDest[c.destination].push(c);
+    }
+
+    grid.innerHTML = order.map(dest => {
+      const rows = byDest[dest].map((c, i) => {
+        const ld = c.ldTrain;
+        const n = parseInt(ld.delay);
+        const dHtml = (isNaN(n)||n===0)
+          ? '<span class="delay-ok">In orario</span>'
+          : `<span class="${n<=5?'delay-low':'delay-high'}">+${n}′</span>`;
+        const feeder = c.feeder
+          ? `<div class="conn-feeder">↳ <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'} · cambio ${c.waitMin}′</div>`
+          : `<div class="conn-no-feeder">Nessun locale in tempo</div>`;
+        return `<div class="conn-option ${i===0?'conn-best':''}">
+          <div class="conn-main">
+            <span class="conn-time">${ld.time}</span>
+            <span class="conn-num">${ld.trainNum}</span>
+            <span class="conn-bin">Bin.${ld.platform||'?'}</span>
+            <span class="conn-delay">${dHtml}</span>
+          </div>
+          ${feeder}
+        </div>`;
+      }).join('');
       return `<div class="conn-card">
-        <div class="conn-dest">${DEST_ICONS[c.destination]||'🚄'} ${c.destination}</div>
-        <div class="conn-main">
-          <span class="conn-time">${ld.time}</span>
-          <span class="conn-num">${ld.trainNum}</span>
-          <span class="conn-delay">${dHtml}</span>
-        </div>
-        <div class="conn-platform">Bin. ${ld.platform||'?'}</div>
-        ${feeder}
+        <div class="conn-dest">${DEST_ICONS[dest]||'🚄'} ${dest}</div>
+        ${rows}
       </div>`;
     }).join('');
   }

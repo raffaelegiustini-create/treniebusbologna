@@ -567,6 +567,7 @@
   fetchData();
   fetchConnections();
   fetchBus();
+  setInterval(fetchConnections, REFRESH_INTERVAL);
   setInterval(fetchBus, 60000);
 </script>
 </body>

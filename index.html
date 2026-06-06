@@ -115,13 +115,17 @@
       .conn-time { font-size: 18px; }
 
       /* Coincidenze: scroll orizzontale */
-      #conn-panel { overflow: visible; }
+      #conn-panel { overflow: visible; width: 100vw; }
       #connections-grid {
-        overflow-x: auto !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        overflow-x: scroll !important;
+        overflow-y: hidden !important;
         -webkit-overflow-scrolling: touch;
-        padding-bottom: 6px;
+        width: 100%;
+        padding-bottom: 8px;
       }
-      .conn-card { flex: 0 0 175px; min-width: 175px; }
+      .conn-card { flex: 0 0 180px; min-width: 180px; }
     }
 
     /* ── Header ─────────────────────────────────── */
@@ -325,18 +329,13 @@
     }
 
     .conn-dest { font-size: 13px; font-weight: bold; letter-spacing: 1px; display: flex; align-items: center; gap: 6px; }
-    .conn-option { display: flex; flex-direction: column; gap: 3px; padding-top: 5px; }
-    .conn-option + .conn-option { border-top: 1px solid var(--border); margin-top: 2px; }
-    .conn-option:not(.conn-best) { opacity: 0.62; }
-    .conn-option:not(.conn-best) .conn-time { font-size: 17px; }
     .conn-main { display: flex; align-items: baseline; gap: 8px; }
-    .conn-time { font-size: 22px; font-weight: bold; letter-spacing: 2px; }
-    .conn-num  { font-size: 10px; color: var(--dim); }
-    .conn-bin  { font-size: 10px; color: var(--dim); }
-    .conn-delay { font-size: 11px; font-weight: bold; margin-left: auto; }
-    .conn-platform { font-size: 10px; color: var(--dim); }
+    .conn-time { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+    .conn-delay { font-size: 11px; font-weight: bold; margin-left: auto; white-space: nowrap; }
+    .conn-sub { font-size: 10px; color: var(--dim); white-space: nowrap; }
     .conn-feeder {
-      font-size: 10px; color: var(--dim);
+      font-size: 10px; color: var(--dim); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
     .conn-feeder-time { color: var(--gold); font-weight: bold; }
     .conn-no-feeder   { color: var(--red); font-size: 10px; border-top: 1px dashed var(--border); padding-top: 3px; margin-top: 1px; }
@@ -769,10 +768,9 @@
         <div class="conn-dest">${DEST_ICONS[c.destination]||'🚄'} ${c.destination}</div>
         <div class="conn-main">
           <span class="conn-time">${ld.time}</span>
-          <span class="conn-num">${ld.trainNum}</span>
-          <span class="conn-bin">Bin.${ld.platform||'?'}</span>
           <span class="conn-delay">${dHtml}</span>
         </div>
+        <div class="conn-sub">${ld.trainNum} · ${T.colPlatform} ${ld.platform||'?'}</div>
         ${feeder}
       </div>`;
     }).join('');

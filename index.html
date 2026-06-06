@@ -177,6 +177,62 @@
     .lang-option:first-child { border-radius: 6px 6px 0 0; }
     .lang-option:last-child  { border-radius: 0 0 6px 6px; }
 
+    /* ── Map button ─────────────────────────────── */
+    .map-btn {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 4px; padding: 3px 8px; cursor: pointer;
+      font-size: 16px; color: var(--text); flex-shrink: 0;
+      transition: border-color .2s;
+    }
+    .map-btn:hover { border-color: var(--gold); }
+
+    /* ── Map modal ──────────────────────────────── */
+    #map-modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    #map-modal.open { display: flex; }
+    .map-modal-inner {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; width: 100%; max-width: 640px;
+      max-height: 90vh; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .map-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .map-modal-title { font-size: 13px; font-weight: bold; letter-spacing: 1px; color: var(--gold); }
+    .map-close {
+      background: transparent; border: none; color: var(--dim);
+      font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px;
+    }
+    .map-close:hover { color: var(--text); }
+    .map-frame {
+      width: 100%; height: 260px; border: none; flex-shrink: 0;
+    }
+    .map-routes {
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .map-route-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-top: 1px solid var(--border);
+      text-decoration: none; color: var(--text);
+      transition: background .15s;
+    }
+    .map-route-card:hover { background: rgba(255,255,255,.04); }
+    .map-route-icon { font-size: 26px; flex-shrink: 0; }
+    .map-route-info { flex: 1; }
+    .map-route-title { font-size: 13px; font-weight: bold; letter-spacing: 1px; margin-bottom: 3px; }
+    .map-route-sub { font-size: 11px; color: var(--dim); }
+    .map-route-time {
+      font-size: 18px; font-weight: bold; color: var(--gold);
+      letter-spacing: 1px; flex-shrink: 0;
+    }
+    .map-route-arrow { font-size: 14px; color: var(--dim); flex-shrink: 0; }
+
     .status-dot {
       width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
       background: var(--green); display: inline-block; animation: pulse 2s infinite;
@@ -334,6 +390,9 @@
     <div id="clock">--:--:--</div>
     <div id="date"></div>
 
+    <!-- Map button -->
+    <button class="map-btn" onclick="openMap()" title="Come arrivare">🗺️</button>
+
     <!-- Language picker -->
     <div class="lang-picker" id="lang-picker">
       <button class="lang-btn" id="lang-btn" onclick="toggleLangMenu()">🇮🇹</button>
@@ -374,6 +433,43 @@
     </div>
   </div>
 
+</div>
+
+<!-- Map modal -->
+<div id="map-modal" onclick="closeMapIfOutside(event)">
+  <div class="map-modal-inner">
+    <div class="map-modal-header">
+      <span class="map-modal-title">🗺️ Da Via Antonio Salieri 4</span>
+      <button class="map-close" onclick="closeMap()">✕</button>
+    </div>
+    <iframe class="map-frame" id="map-frame" loading="lazy"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=11.332%2C44.488%2C11.348%2C44.496&layer=mapnik"
+      allowfullscreen></iframe>
+    <div class="map-routes">
+      <!-- Bus stop -->
+      <a class="map-route-card" target="_blank"
+        href="https://www.google.com/maps/dir/?api=1&origin=Via+Antonio+Salieri+4,+Bologna,+Italy&destination=44.4913,11.3340&travelmode=walking">
+        <div class="map-route-icon">🚌</div>
+        <div class="map-route-info">
+          <div class="map-route-title">Bus 13 / 96 — Fermata DIRETTISSIMA</div>
+          <div class="map-route-sub">Via Toscana · direzione Centro</div>
+        </div>
+        <div class="map-route-time">~3 min</div>
+        <div class="map-route-arrow">›</div>
+      </a>
+      <!-- Train station -->
+      <a class="map-route-card" target="_blank"
+        href="https://www.google.com/maps/dir/?api=1&origin=Via+Antonio+Salieri+4,+Bologna,+Italy&destination=Stazione+di+Bologna+San+Ruffillo&travelmode=walking">
+        <div class="map-route-icon">🚂</div>
+        <div class="map-route-info">
+          <div class="map-route-title">Treno — Bologna S.Ruffillo</div>
+          <div class="map-route-sub">Linea SFM · direzione Bologna Centrale</div>
+        </div>
+        <div class="map-route-time">~5 min</div>
+        <div class="map-route-arrow">›</div>
+      </a>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -484,8 +580,8 @@
     document.documentElement.setAttribute('dir', T.rtl ? 'rtl' : 'ltr');
     // Re-render static UI strings
     applyTranslations();
-    // Re-render dynamic content
-    renderTable(lastTrainsData);
+    // Re-render dynamic content immediately
+    document.getElementById('content').innerHTML = renderTable(lastTrainsData);
     renderConnections(lastConnectionsData);
     renderBus(lastBusData);
   }
@@ -717,6 +813,11 @@
       saveCache(CACHE_BUS, data);
     } catch (e) {}
   }
+
+  // ── Map modal ─────────────────────────────────────────────────────────────
+  function openMap() { document.getElementById('map-modal').classList.add('open'); }
+  function closeMap() { document.getElementById('map-modal').classList.remove('open'); }
+  function closeMapIfOutside(e) { if (e.target === document.getElementById('map-modal')) closeMap(); }
 
   // Apply saved language on load
   document.getElementById('lang-btn').textContent = T.flag;

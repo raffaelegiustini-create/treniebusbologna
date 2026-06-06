@@ -82,15 +82,20 @@
       .header-spacer { flex: 1; }
 
       /* Header compatto: nascondi elementi non essenziali per far stare mappa + lingua */
-      header { gap: 6px; padding: 0 10px; }
+      header {
+        gap: 6px;
+        padding-left: calc(10px + env(safe-area-inset-left));
+        padding-right: calc(10px + env(safe-area-inset-right));
+      }
       .logo { display: none; }
       .station-name { display: none; }
       #refresh-info { display: none; }
       #clock { font-size: 14px; }
       #btn-dep { font-size: 10px; padding: 3px 8px; }
       #btn-arr { font-size: 10px; padding: 3px 8px; }
-      .map-btn { font-size: 18px; padding: 4px 9px; }
-      .lang-btn { font-size: 20px; padding: 4px 8px; }
+      .map-btn  { font-size: 18px; padding: 4px 9px; flex-shrink: 0; }
+      .lang-picker { flex-shrink: 0; }
+      .lang-btn { font-size: 20px; padding: 4px 8px; flex-shrink: 0; }
 
       #trains-panel { flex: 0 0 auto; width: 100%; overflow: hidden; }
       #conn-panel {
@@ -464,18 +469,18 @@
       <button class="map-close" onclick="closeMap()">✕</button>
     </div>
     <iframe class="map-frame" id="map-frame" loading="lazy"
-      src="https://www.openstreetmap.org/export/embed.html?bbox=11.332%2C44.488%2C11.348%2C44.496&layer=mapnik"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=11.364%2C44.460%2C11.378%2C44.468&layer=mapnik&marker=44.46398%2C11.37074"
       allowfullscreen></iframe>
     <div class="map-routes">
       <!-- Bus stop -->
       <a class="map-route-card" target="_blank"
-        href="https://www.google.com/maps/dir/?api=1&origin=Via+Antonio+Salieri+4,+Bologna,+Italy&destination=44.4913,11.3340&travelmode=walking">
+        href="https://www.google.com/maps/dir/?api=1&origin=Via+Antonio+Salieri+4,+Bologna,+Italy&destination=44.46398,11.37074&travelmode=walking">
         <div class="map-route-icon">🚌</div>
         <div class="map-route-info">
           <div class="map-route-title">Bus 13 / 96 — Fermata DIRETTISSIMA</div>
           <div class="map-route-sub">Via Toscana · direzione Centro</div>
         </div>
-        <div class="map-route-time">~3 min</div>
+        <div class="map-route-time">~2 min</div>
         <div class="map-route-arrow">›</div>
       </a>
       <!-- Train station -->

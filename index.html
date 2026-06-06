@@ -152,6 +152,31 @@
     #clock { color: var(--gold); font-weight: bold; letter-spacing: 2px; white-space: nowrap; }
     #date  { font-size: 10px; color: var(--dim); letter-spacing: 1px; white-space: nowrap; }
 
+    /* ── Language picker ────────────────────── */
+    .lang-picker { position: relative; flex-shrink: 0; }
+    .lang-btn {
+      background: transparent; border: 1px solid var(--border);
+      border-radius: 4px; padding: 3px 7px; cursor: pointer;
+      font-size: 18px; line-height: 1; display: flex; align-items: center; gap: 4px;
+    }
+    .lang-btn:hover { border-color: var(--gold); }
+    .lang-dropdown {
+      display: none; position: absolute; right: 0; top: 110%;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 6px; z-index: 100; min-width: 44px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.6);
+    }
+    .lang-picker.open .lang-dropdown { display: block; }
+    .lang-option {
+      padding: 7px 10px; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; gap: 6px;
+      font-family: inherit; font-size: 13px; color: var(--dim);
+      transition: color .15s;
+    }
+    .lang-option:hover, .lang-option.active { color: var(--text); background: rgba(255,255,255,.04); }
+    .lang-option:first-child { border-radius: 6px 6px 0 0; }
+    .lang-option:last-child  { border-radius: 0 0 6px 6px; }
+
     .status-dot {
       width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
       background: var(--green); display: inline-block; animation: pulse 2s infinite;
@@ -308,6 +333,19 @@
     <span id="refresh-info"></span>
     <div id="clock">--:--:--</div>
     <div id="date"></div>
+
+    <!-- Language picker -->
+    <div class="lang-picker" id="lang-picker">
+      <button class="lang-btn" id="lang-btn" onclick="toggleLangMenu()">🇮🇹</button>
+      <div class="lang-dropdown" id="lang-dropdown">
+        <div class="lang-option active" onclick="setLang('it')">🇮🇹 IT</div>
+        <div class="lang-option" onclick="setLang('en')">🇬🇧 EN</div>
+        <div class="lang-option" onclick="setLang('fr')">🇫🇷 FR</div>
+        <div class="lang-option" onclick="setLang('de')">🇩🇪 DE</div>
+        <div class="lang-option" onclick="setLang('zh')">🇨🇳 ZH</div>
+        <div class="lang-option" onclick="setLang('ar')">🇸🇦 AR</div>
+      </div>
+    </div>
   </header>
 
   <!-- Train table -->
@@ -339,11 +377,137 @@
 </div>
 
 <script>
+  // ── i18n ──────────────────────────────────────────────────────────────────
+  const LANGS = {
+    it: {
+      flag:'🇮🇹', rtl: false,
+      departures:'▶ Partenze', arrivals:'◀ Arrivi',
+      loading:'Caricamento...', noTrains:'Nessun treno trovato',
+      colTime:'Orario', colTrain:'Treno', colFrom:'Provenienza', colTo:'Destinazione',
+      colDelay:'Ritardo', colPlatform:'Bin.', colStatus:'Stato',
+      onTime:'Orario', early:"anticipo", delayed:'Ritardo', cancelled:'Soppresso', departed:'Partito', arrived:'Arrivato',
+      connHeader:'Coincidenze · Bologna C.le', connLoading:'Caricamento...', connEmpty:'Nessuna coincidenza trovata',
+      connNoFeeder:'Nessun locale in tempo', connChange:'cambio',
+      busLoading:'Caricamento...', busNone:'Nessuna corsa',
+      busDirection:'→ Centro', busLive:'● LIVE', busSched:'PREVISTO', now:'ora', min:'min',
+      go:'Vai', idLabel:'ID:',
+    },
+    en: {
+      flag:'🇬🇧',
+      departures:'▶ Departures', arrivals:'◀ Arrivals',
+      loading:'Loading...', noTrains:'No trains found',
+      colTime:'Time', colTrain:'Train', colFrom:'Origin', colTo:'Destination',
+      colDelay:'Delay', colPlatform:'Plt.', colStatus:'Status',
+      onTime:'On time', early:'early', delayed:'Delayed', cancelled:'Cancelled', departed:'Departed', arrived:'Arrived',
+      connHeader:'Connections · Bologna C.le', connLoading:'Loading...', connEmpty:'No connections found',
+      connNoFeeder:'No local train in time', connChange:'change',
+      busLoading:'Loading...', busNone:'No departures',
+      busDirection:'→ Centre', busLive:'● LIVE', busSched:'SCHED', now:'now', min:'min',
+      go:'Go', idLabel:'ID:',
+    },
+    fr: {
+      flag:'🇫🇷',
+      departures:'▶ Départs', arrivals:'◀ Arrivées',
+      loading:'Chargement...', noTrains:'Aucun train trouvé',
+      colTime:'Heure', colTrain:'Train', colFrom:'Provenance', colTo:'Destination',
+      colDelay:'Retard', colPlatform:'Voie', colStatus:'État',
+      onTime:'À l\'heure', early:'avance', delayed:'Retard', cancelled:'Supprimé', departed:'Parti', arrived:'Arrivé',
+      connHeader:'Correspondances · Bologne C.le', connLoading:'Chargement...', connEmpty:'Aucune correspondance',
+      connNoFeeder:'Pas de train local', connChange:'attente',
+      busLoading:'Chargement...', busNone:'Aucun départ',
+      busDirection:'→ Centre', busLive:'● LIVE', busSched:'PRÉVU', now:'maint.', min:'min',
+      go:'OK', idLabel:'ID:',
+    },
+    de: {
+      flag:'🇩🇪',
+      departures:'▶ Abfahrt', arrivals:'◀ Ankunft',
+      loading:'Laden...', noTrains:'Keine Züge gefunden',
+      colTime:'Zeit', colTrain:'Zug', colFrom:'Herkunft', colTo:'Ziel',
+      colDelay:'Verspätung', colPlatform:'Gleis', colStatus:'Status',
+      onTime:'Pünktlich', early:'früher', delayed:'Verspätung', cancelled:'Ausgefallen', departed:'Abgefahren', arrived:'Angekommen',
+      connHeader:'Anschlüsse · Bologna Hbf', connLoading:'Laden...', connEmpty:'Keine Anschlüsse',
+      connNoFeeder:'Kein Lokalzug rechtzeitig', connChange:'Umstieg',
+      busLoading:'Laden...', busNone:'Keine Fahrten',
+      busDirection:'→ Zentrum', busLive:'● LIVE', busSched:'PLAN', now:'jetzt', min:'Min',
+      go:'Los', idLabel:'ID:',
+    },
+    zh: {
+      flag:'🇨🇳',
+      departures:'▶ 出发', arrivals:'◀ 到达',
+      loading:'加载中...', noTrains:'未找到列车',
+      colTime:'时间', colTrain:'车次', colFrom:'来源', colTo:'目的地',
+      colDelay:'延误', colPlatform:'站台', colStatus:'状态',
+      onTime:'准时', early:'提前', delayed:'延误', cancelled:'取消', departed:'已出发', arrived:'已到达',
+      connHeader:'中转 · 博洛尼亚中央站', connLoading:'加载中...', connEmpty:'未找到中转',
+      connNoFeeder:'无合适本地列车', connChange:'等候',
+      busLoading:'加载中...', busNone:'暂无班次',
+      busDirection:'→ 市中心', busLive:'● 实时', busSched:'计划', now:'现在', min:'分钟',
+      go:'确认', idLabel:'ID:',
+    },
+    ar: {
+      flag:'🇸🇦', rtl: true,
+      departures:'▶ المغادرة', arrivals:'◀ الوصول',
+      loading:'جارٍ التحميل...', noTrains:'لم يتم العثور على قطارات',
+      colTime:'الوقت', colTrain:'القطار', colFrom:'المصدر', colTo:'الوجهة',
+      colDelay:'التأخير', colPlatform:'رصيف', colStatus:'الحالة',
+      onTime:'في الموعد', early:'مبكر', delayed:'متأخر', cancelled:'ملغى', departed:'غادر', arrived:'وصل',
+      connHeader:'التوصيلات · بولونيا المركزية', connLoading:'جارٍ التحميل...', connEmpty:'لا توصيلات',
+      connNoFeeder:'لا قطار محلي في الوقت', connChange:'انتظار',
+      busLoading:'جارٍ التحميل...', busNone:'لا رحلات',
+      busDirection:'→ المركز', busLive:'● مباشر', busSched:'مجدول', now:'الآن', min:'دقيقة',
+      go:'انطلق', idLabel:'ID:',
+    },
+  };
+
+  let currentLang = localStorage.getItem('lang') || 'it';
+  let T = LANGS[currentLang];
+
+  function toggleLangMenu() {
+    document.getElementById('lang-picker').classList.toggle('open');
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#lang-picker'))
+      document.getElementById('lang-picker').classList.remove('open');
+  });
+
+  function setLang(code) {
+    currentLang = code;
+    T = LANGS[code];
+    localStorage.setItem('lang', code);
+    document.getElementById('lang-btn').textContent = T.flag;
+    document.getElementById('lang-picker').classList.remove('open');
+    // Update active state in dropdown
+    document.querySelectorAll('.lang-option').forEach(el => {
+      el.classList.toggle('active', el.getAttribute('onclick') === `setLang('${code}')`);
+    });
+    // RTL support
+    document.documentElement.setAttribute('dir', T.rtl ? 'rtl' : 'ltr');
+    // Re-render static UI strings
+    applyTranslations();
+    // Re-render dynamic content
+    renderTable(lastTrainsData);
+    renderConnections(lastConnectionsData);
+    renderBus(lastBusData);
+  }
+
+  function applyTranslations() {
+    document.getElementById('btn-dep').textContent = T.departures;
+    document.getElementById('btn-arr').textContent = T.arrivals;
+    document.querySelector('.conn-header').textContent = T.connHeader;
+    document.querySelector('.bus-direction').textContent = T.busDirection;
+    document.querySelector('.place-row button').textContent = T.go;
+    document.querySelector('.place-row label').textContent = T.idLabel;
+  }
+
+  // ── End i18n ───────────────────────────────────────────────────────────────
+
   let isArrivals = false;
   let placeId = 679;
   let refreshTimer = null;
   const REFRESH_INTERVAL = 30000;
   const isMobile = () => window.innerWidth < 768;
+  // Cache last data for re-render on lang change
+  let lastTrainsData = null, lastConnectionsData = null, lastBusData = null;
 
   function updateClock() {
     const now = new Date();
@@ -372,10 +536,10 @@
 
   function delayHtml(d) {
     const n = parseInt(d);
-    if (isNaN(n) || n === 0) return '<span class="delay-ok">Orario</span>';
-    if (n < 0) return `<span class="delay-ok">${Math.abs(n)}' anticipo</span>`;
+    if (isNaN(n) || n === 0) return `<span class="delay-ok">${T.onTime}</span>`;
+    if (n < 0) return `<span class="delay-ok">${Math.abs(n)}' ${T.early}</span>`;
     const cls = n <= 5 ? 'delay-low' : 'delay-high';
-    return `<span class="${cls}">+${n} min</span>`;
+    return `<span class="${cls}">+${n} ${T.min}</span>`;
   }
 
   function maxRows() {
@@ -386,19 +550,20 @@
   }
 
   function renderTable(trains) {
+    lastTrainsData = trains;
     if (!trains || trains.length === 0)
-      return '<div class="empty-state">Nessun treno trovato</div>';
+      return '<div class="empty-state">' + T.noTrains + '</div>';
 
-    const dir = isArrivals ? 'Provenienza' : 'Destinazione';
+    const dir = isArrivals ? T.colFrom : T.colTo;
     const visible = trains.slice(0, maxRows());
 
     let html = `<table><thead><tr>
-      <th>Orario</th>
-      <th class="col-train">Treno</th>
+      <th>${T.colTime}</th>
+      <th class="col-train">${T.colTrain}</th>
       <th>${dir}</th>
-      <th>Ritardo</th>
-      <th style="text-align:center">Bin.</th>
-      <th class="col-stato">Stato</th>
+      <th>${T.colDelay}</th>
+      <th style="text-align:center">${T.colPlatform}</th>
+      <th class="col-stato">${T.colStatus}</th>
     </tr></thead><tbody>`;
 
     for (const t of visible) {
@@ -406,11 +571,11 @@
       let stTxt = '', stCls = '';
       if (t.status) {
         const s = t.status.toLowerCase();
-        if (s.includes('soppres')||s.includes('cancel'))  { stTxt='Soppresso'; stCls='status-cancelled'; }
-        else if (s.includes('partit')||s.includes('arriv')){ stTxt=isArrivals?'Arrivato':'Partito'; stCls='status-departed'; }
+        if (s.includes('soppres')||s.includes('cancel'))  { stTxt=T.cancelled; stCls='status-cancelled'; }
+        else if (s.includes('partit')||s.includes('arriv')){ stTxt=isArrivals?T.arrived:T.departed; stCls='status-departed'; }
         else { stTxt=t.status; stCls='status-ontime'; }
-      } else if (!isNaN(d) && d > 0) { stTxt='Ritardo'; stCls='status-delayed'; }
-      else { stTxt='Regolare'; stCls='status-ontime'; }
+      } else if (!isNaN(d) && d > 0) { stTxt=T.delayed; stCls='status-delayed'; }
+      else { stTxt=T.onTime; stCls='status-ontime'; }
 
       html += `<tr>
         <td class="cell-time">${t.time||'--:--'}</td>
@@ -472,20 +637,21 @@
   const DEST_ICONS = { Milano:'🏙️', Roma:'🏛️', Venezia:'🚢' };
 
   function renderConnections(connections) {
+    lastConnectionsData = connections;
     const grid = document.getElementById('connections-grid');
     if (!connections || connections.length === 0) {
-      grid.innerHTML = '<div class="conn-empty">Nessuna coincidenza trovata</div>';
+      grid.innerHTML = `<div class="conn-empty">${T.connEmpty}</div>`;
       return;
     }
     grid.innerHTML = connections.map(c => {
       const ld = c.ldTrain;
       const n = parseInt(ld.delay);
       const dHtml = (isNaN(n)||n===0)
-        ? '<span class="delay-ok">In orario</span>'
+        ? `<span class="delay-ok">${T.onTime}</span>`
         : `<span class="${n<=5?'delay-low':'delay-high'}">+${n}′</span>`;
       const feeder = c.feeder
-        ? `<div class="conn-feeder">↳ <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'} · cambio ${c.waitMin}′</div>`
-        : `<div class="conn-no-feeder">Nessun locale in tempo</div>`;
+        ? `<div class="conn-feeder">↳ <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'} · ${T.connChange} ${c.waitMin}′</div>`
+        : `<div class="conn-no-feeder">${T.connNoFeeder}</div>`;
       return `<div class="conn-card">
         <div class="conn-dest">${DEST_ICONS[c.destination]||'🚄'} ${c.destination}</div>
         <div class="conn-main">
@@ -517,18 +683,20 @@
   }
 
   function renderBus(data) {
+    lastBusData = data;
+    if (!data) return;
     const container = document.getElementById('bus-times');
     const buses = data.buses || [];
     if (!buses.length) {
-      container.innerHTML = '<div style="color:var(--dim);font-size:12px">Nessuna corsa</div>';
+      container.innerHTML = `<div style="color:var(--dim);font-size:12px">${T.busNone}</div>`;
       return;
     }
     const badge = data.realtime
-      ? '<span style="font-size:9px;color:#00e676;letter-spacing:1px;margin-left:auto;flex-shrink:0">● LIVE</span>'
-      : '<span style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-left:auto;flex-shrink:0">PREVISTO</span>';
+      ? `<span style="font-size:9px;color:#00e676;letter-spacing:1px;margin-left:auto;flex-shrink:0">${T.busLive}</span>`
+      : `<span style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-left:auto;flex-shrink:0">${T.busSched}</span>`;
     container.innerHTML = buses.map((b, i) => {
       const wait = minutesUntil(b.time);
-      const waitLabel = wait <= 0 ? 'ora' : `${wait} min`;
+      const waitLabel = wait <= 0 ? T.now : `${wait} ${T.min}`;
       const isLive = b.type === 'DaSatellite';
       const lineColor = b.line === '96' ? '#1a86f2' : '#ff6633';
       return `<div class="bus-time-item ${i === 0 ? 'next' : ''}">
@@ -549,6 +717,14 @@
       saveCache(CACHE_BUS, data);
     } catch (e) {}
   }
+
+  // Apply saved language on load
+  document.getElementById('lang-btn').textContent = T.flag;
+  document.documentElement.setAttribute('dir', T.rtl ? 'rtl' : 'ltr');
+  applyTranslations();
+  document.querySelectorAll('.lang-option').forEach(el => {
+    el.classList.toggle('active', el.getAttribute('onclick') === `setLang('${currentLang}')`);
+  });
 
   fetchData();
   fetchConnections();

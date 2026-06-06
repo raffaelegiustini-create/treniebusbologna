@@ -73,36 +73,44 @@
        MOBILE (< 768px) — layout verticale
     ════════════════════════════════════════ */
     @media (max-width: 767px) {
-      html, body { min-height: 100vh; overflow-y: auto; }
+      html, body { min-height: 100vh; overflow-y: auto; overflow-x: hidden; }
 
-      #app { display: flex; flex-direction: column; min-height: 100vh; }
+      #app { display: flex; flex-direction: column; min-height: 100vh; width: 100vw; }
 
-      .place-row { display: none; }   /* nasconde il campo ID stazione */
-      #clock { font-size: 18px; }
+      .place-row { display: none; }
+      #clock { font-size: 15px; }
       #date  { display: none; }
       .header-spacer { flex: 1; }
 
-      #trains-panel { flex: 0 0 auto; }
+      /* Header compatto: nascondi testo pulsanti, mostra solo icone */
+      #btn-dep { font-size: 10px; padding: 3px 7px; }
+      #btn-arr { font-size: 10px; padding: 3px 7px; }
+      .station-name { font-size: 12px; max-width: 90px; }
+
+      #trains-panel { flex: 0 0 auto; width: 100%; overflow: hidden; }
       #conn-panel {
         border-top: 1px solid var(--border);
         border-left: none;
         flex: 0 0 auto;
       }
-      #connections-grid { flex-direction: row; overflow-x: auto; }
-      .conn-card { flex: 0 0 200px; }
+      #connections-grid { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .conn-card { flex: 0 0 175px; }
 
-      #bus-panel { flex: 0 0 auto; margin-top: auto; }
+      #bus-panel { flex: 0 0 auto; }
 
-      /* tabella mobile: nascondi colonne secondarie */
+      /* Tabella mobile: layout fisso, nascondi colonne secondarie */
+      table { table-layout: fixed; width: 100%; }
       .col-train, .col-stato { display: none; }
-      th:nth-child(1), td:nth-child(1) { width: 22%; }  /* orario */
-      th:nth-child(3), td:nth-child(3) { width: auto; } /* dest */
-      th:nth-child(4), td:nth-child(4) { width: 26%; }  /* ritardo */
-      th:nth-child(5), td:nth-child(5) { width: 14%; text-align: center; } /* bin */
+      th:nth-child(1), td:nth-child(1) { width: 19%; }  /* orario */
+      th:nth-child(3), td:nth-child(3) { width: 40%; }  /* dest */
+      th:nth-child(4), td:nth-child(4) { width: 24%; }  /* ritardo */
+      th:nth-child(5), td:nth-child(5) { width: 17%; text-align: center; } /* bin */
 
-      .cell-time { font-size: 15px; }
-      .cell-dest { font-size: 13px; }
-      .cell-platform { font-size: 15px; }
+      .cell-time { font-size: 14px; }
+      .cell-dest { font-size: 12px; }
+      .cell-delay span { font-size: 11px; }
+      .cell-platform { font-size: 14px; }
+      tbody td { padding: 5px 6px; }
       .bus-time-value { font-size: 16px; }
       .conn-time { font-size: 18px; }
     }

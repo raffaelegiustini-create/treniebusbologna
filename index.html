@@ -477,38 +477,24 @@
       grid.innerHTML = '<div class="conn-empty">Nessuna coincidenza trovata</div>';
       return;
     }
-
-    // Group options by destination (the server may return up to 2 per destination)
-    const byDest = {};
-    const order = [];
-    for (const c of connections) {
-      if (!byDest[c.destination]) { byDest[c.destination] = []; order.push(c.destination); }
-      byDest[c.destination].push(c);
-    }
-
-    grid.innerHTML = order.map(dest => {
-      const rows = byDest[dest].map((c, i) => {
-        const ld = c.ldTrain;
-        const n = parseInt(ld.delay);
-        const dHtml = (isNaN(n)||n===0)
-          ? '<span class="delay-ok">In orario</span>'
-          : `<span class="${n<=5?'delay-low':'delay-high'}">+${n}′</span>`;
-        const feeder = c.feeder
-          ? `<div class="conn-feeder">↳ <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'} · cambio ${c.waitMin}′</div>`
-          : `<div class="conn-no-feeder">Nessun locale in tempo</div>`;
-        return `<div class="conn-option ${i===0?'conn-best':''}">
-          <div class="conn-main">
-            <span class="conn-time">${ld.time}</span>
-            <span class="conn-num">${ld.trainNum}</span>
-            <span class="conn-bin">Bin.${ld.platform||'?'}</span>
-            <span class="conn-delay">${dHtml}</span>
-          </div>
-          ${feeder}
-        </div>`;
-      }).join('');
+    grid.innerHTML = connections.map(c => {
+      const ld = c.ldTrain;
+      const n = parseInt(ld.delay);
+      const dHtml = (isNaN(n)||n===0)
+        ? '<span class="delay-ok">In orario</span>'
+        : `<span class="${n<=5?'delay-low':'delay-high'}">+${n}′</span>`;
+      const feeder = c.feeder
+        ? `<div class="conn-feeder">↳ <span class="conn-feeder-time">${c.feeder.time}</span> bin.${c.feeder.platform||'?'} · cambio ${c.waitMin}′</div>`
+        : `<div class="conn-no-feeder">Nessun locale in tempo</div>`;
       return `<div class="conn-card">
-        <div class="conn-dest">${DEST_ICONS[dest]||'🚄'} ${dest}</div>
-        ${rows}
+        <div class="conn-dest">${DEST_ICONS[c.destination]||'🚄'} ${c.destination}</div>
+        <div class="conn-main">
+          <span class="conn-time">${ld.time}</span>
+          <span class="conn-num">${ld.trainNum}</span>
+          <span class="conn-bin">Bin.${ld.platform||'?'}</span>
+          <span class="conn-delay">${dHtml}</span>
+        </div>
+        ${feeder}
       </div>`;
     }).join('');
   }

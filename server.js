@@ -150,19 +150,23 @@ function timeToMinutes(hhmm) {
 // build connection suggestions for Milano/Roma/Venezia.
 // Travel time from S.Ruffillo to Bologna Centrale is ~15 min.
 function buildConnections(localTrains, bolognaDepartures) {
-  const TRAVEL_MIN      = 15; // minutes S.Ruffillo -> Bologna C.le (on the local train)
+  const TRAVEL_MIN      = 15; // minutes S.Ruffillo -> Bologna C.le
   const PLATFORM_CHANGE = 5;  // minutes to walk between platforms at Bologna C.le
-  const MAX_WAIT        = 45; // don't suggest waiting more than this at Bologna C.le
-  const OPTIONS_PER_DEST = 2; // how many catchable trains to show per destination
+  const MAX_WAIT        = 60; // max wait at Bologna C.le before the LD train
 
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
-  // Local trains toward Bologna Centrale that haven't left yet, sorted by time
-  const toBologna = localTrains
+  // Pick the single next local train to Bologna Centrale that hasn't left yet
+  const nextFeeder = localTrains
     .filter(t => t.destination.includes('BOLOGNA') && !t.status.toLowerCase().includes('soppres'))
     .filter(t => timeToMinutes(t.time) + (parseInt(t.delay)||0) >= nowMin - 2)
-    .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+    .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time))[0] || null;
+
+  // Time at which you'd be ready to board at Bologna C.le
+  const readyMin = nextFeeder
+    ? timeToMinutes(nextFeeder.time) + (parseInt(nextFeeder.delay)||0) + TRAVEL_MIN + PLATFORM_CHANGE
+    : null;
 
   const results = [];
 
@@ -174,45 +178,33 @@ function buildConnections(localTrains, bolognaDepartures) {
 
     if (lds.length === 0) continue;
 
-    const options = [];
-    for (const ld of lds) {
-      const ldActual = timeToMinutes(ld.time) + (parseInt(ld.delay)||0);
-
-      // Best feeder = the latest local you could take that still makes the change
-      // (least time wasted waiting at the station = most realistic suggestion)
-      let bestFeeder = null, bestWait = Infinity;
-      for (const f of toBologna) {
-        const ready = timeToMinutes(f.time) + (parseInt(f.delay)||0) + TRAVEL_MIN + PLATFORM_CHANGE;
-        const wait = ldActual - ready;
-        if (wait >= 0 && wait <= MAX_WAIT && wait < bestWait) {
-          bestWait = wait;
-          bestFeeder = f;
+    // Find the soonest LD train catchable from the next feeder
+    let chosenLd = null, waitMin = null;
+    if (readyMin !== null) {
+      for (const ld of lds) {
+        const ldActual = timeToMinutes(ld.time) + (parseInt(ld.delay)||0);
+        const wait = ldActual - readyMin;
+        if (wait >= 0 && wait <= MAX_WAIT) {
+          chosenLd = ld;
+          waitMin = wait;
+          break;
         }
       }
-
-      if (bestFeeder) {
-        options.push({
-          destination: conn.label,
-          ldTrain: { trainNum: ld.trainNum, category: ld.category, time: ld.time, delay: ld.delay, platform: ld.platform, status: ld.status },
-          feeder: { trainNum: bestFeeder.trainNum, time: bestFeeder.time, delay: bestFeeder.delay, platform: bestFeeder.platform },
-          waitMin: bestWait,
-        });
-      }
-      if (options.length >= OPTIONS_PER_DEST) break;
     }
 
-    // Fallback: no catchable option found -> still show the next departure (no feeder)
-    if (options.length === 0) {
-      const ld = lds.find(t => timeToMinutes(t.time) + (parseInt(t.delay)||0) >= nowMin) || lds[0];
-      options.push({
-        destination: conn.label,
-        ldTrain: { trainNum: ld.trainNum, category: ld.category, time: ld.time, delay: ld.delay, platform: ld.platform, status: ld.status },
-        feeder: null,
-        waitMin: null,
-      });
+    // Fallback: no catchable LD from next feeder → show next future LD anyway
+    if (!chosenLd) {
+      chosenLd = lds.find(t => timeToMinutes(t.time) + (parseInt(t.delay)||0) >= nowMin) || lds[0];
     }
 
-    results.push(...options);
+    results.push({
+      destination: conn.label,
+      ldTrain: { trainNum: chosenLd.trainNum, category: chosenLd.category, time: chosenLd.time, delay: chosenLd.delay, platform: chosenLd.platform, status: chosenLd.status },
+      feeder: nextFeeder && waitMin !== null
+        ? { trainNum: nextFeeder.trainNum, time: nextFeeder.time, delay: nextFeeder.delay, platform: nextFeeder.platform }
+        : null,
+      waitMin,
+    });
   }
 
   return results;

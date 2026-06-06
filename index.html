@@ -420,8 +420,30 @@
     return html + '</tbody></table>';
   }
 
+  const CACHE_TRAINS = `cache_trains_${placeId}_${isArrivals}`;
+  const CACHE_CONNECTIONS = `cache_connections_${placeId}`;
+  const CACHE_BUS = 'cache_bus';
+
+  function loadCache(key) {
+    try { return JSON.parse(localStorage.getItem(key)); } catch { return null; }
+  }
+  function saveCache(key, data) {
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+  }
+
   async function fetchData() {
     const dot = document.getElementById('status-dot');
+
+    // Mostra subito i dati in cache se disponibili
+    const cached = loadCache(CACHE_TRAINS);
+    if (cached) {
+      if (cached.station && cached.station !== 'Stazione')
+        document.getElementById('station-name').textContent = cached.station;
+      document.getElementById('content').innerHTML = renderTable(cached.trains);
+      document.getElementById('refresh-info').textContent =
+        `⚡ ${new Date().toLocaleTimeString('it-IT')} · ${cached.trains.length}`;
+    }
+
     try {
       const res = await fetch(`/api/trains?placeId=${placeId}&arrivals=${isArrivals}`);
       const data = await res.json();
@@ -432,10 +454,12 @@
       dot.className = 'status-dot';
       document.getElementById('refresh-info').textContent =
         `${new Date().toLocaleTimeString('it-IT')} · ${data.trains.length}`;
+      saveCache(CACHE_TRAINS, data);
     } catch (err) {
       dot.className = 'status-dot error';
-      document.getElementById('content').innerHTML =
-        `<div class="empty-state" style="color:var(--red)">Errore: ${err.message}</div>`;
+      if (!cached)
+        document.getElementById('content').innerHTML =
+          `<div class="empty-state" style="color:var(--red)">Errore: ${err.message}</div>`;
     }
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(fetchData, REFRESH_INTERVAL);
@@ -472,10 +496,13 @@
   }
 
   async function fetchConnections() {
+    const cached = loadCache(CACHE_CONNECTIONS);
+    if (cached) renderConnections(cached.connections);
     try {
       const res = await fetch(`/api/connections?placeId=${placeId}`);
       const data = await res.json();
       renderConnections(data.connections);
+      saveCache(CACHE_CONNECTIONS, data);
     } catch (e) {}
   }
 
@@ -509,9 +536,13 @@
   }
 
   async function fetchBus() {
+    const cached = loadCache(CACHE_BUS);
+    if (cached) renderBus(cached);
     try {
       const res = await fetch('/api/bus');
-      renderBus(await res.json());
+      const data = await res.json();
+      renderBus(data);
+      saveCache(CACHE_BUS, data);
     } catch (e) {}
   }
 

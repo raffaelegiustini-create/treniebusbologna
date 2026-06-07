@@ -11,8 +11,8 @@ GTFS_ZIP = "/Users/raffaelegiustini/Downloads/gommagtfsbo_20260522.zip"
 OUTPUT   = "/Users/raffaelegiustini/Documents/Claude/treni/bus_schedule.json"
 
 # Fermata e linea di interesse
-STOP_ID        = "9025"   # DIRETTISSIMA verso centro
-DIRECTION_ID   = "0"      # verso Piazza Malpighi
+STOP_ID        = "9026"   # DIRETTISSIMA verso centro
+DIRECTION_ID   = "1"      # verso Piazza Malpighi / Minghetti
 LINE_SHORT     = "13"
 
 DOW = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]

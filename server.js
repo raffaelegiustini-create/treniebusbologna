@@ -8,7 +8,7 @@ const PORT = 3456;
 
 // ── Hello Bus real-time API ───────────────────────────────────────────────────
 const HELLOBUS_URL = 'https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus';
-const BUS_STOP_ID  = '9025';  // DIRETTISSIMA verso centro
+const BUS_STOP_ID  = '9026';  // DIRETTISSIMA verso centro (Piazza Malpighi/Minghetti)
 const BUS_LINES    = ['13', '96'];
 
 function parseHelloBusResponse(data) {

@@ -250,6 +250,18 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ lines: BUS_LINES, stop: 'DIRETTISSIMA', direction: 'Centro (Piazza Malpighi)', buses: next.map(t => ({ line: '13', time: t, type: 'Previsto' })), realtime: false }));
         return;
       }
+      // Guarantee at least 3 upcoming "13" departures: top up from static schedule
+      const MIN_13 = 3;
+      const line13 = buses.filter(b => b.line === '13');
+      if (line13.length < MIN_13) {
+        const existing = new Set(line13.map(b => b.time));
+        const lastTime = line13.length ? line13[line13.length - 1].time : '00:00';
+        const scheduled = getNextBuses(12)
+          .filter(t => t > lastTime && !existing.has(t))
+          .slice(0, MIN_13 - line13.length)
+          .map(t => ({ line: '13', time: t, type: 'Previsto' }));
+        buses = buses.concat(scheduled).sort((a, b) => a.time.localeCompare(b.time));
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ lines: BUS_LINES, stop: 'DIRETTISSIMA', direction: 'Centro (Piazza Malpighi)', buses, realtime: true }));
     });

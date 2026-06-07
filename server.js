@@ -17,7 +17,7 @@ function parseHelloBusResponse(data) {
   const text = match[1].replace(/TperHellobus:\s*/, '').trim();
   if (!text || text.toLowerCase().includes('non trovata') || text.toLowerCase().includes('nessun')) return [];
   return text.split(',').map(s => s.trim()).filter(Boolean).map(entry => {
-    const m = entry.match(/(\d+)\s+(DaSatellite|Previsto)\s+(\d{2}:\d{2})/);
+    const m = entry.match(/([0-9]+[A-Za-z]?)\s+(DaSatellite|Previsto)\s+(\d{2}:\d{2})/);
     if (!m) return null;
     return { line: m[1], type: m[2], time: m[3] };
   }).filter(Boolean);
@@ -252,7 +252,7 @@ const server = http.createServer((req, res) => {
       }
       // Guarantee at least 3 upcoming "13" departures: top up from static schedule
       const MIN_13 = 3;
-      const line13 = buses.filter(b => b.line === '13');
+      const line13 = buses.filter(b => b.line.startsWith('13'));
       if (line13.length < MIN_13) {
         const existing = new Set(line13.map(b => b.time));
         const lastTime = line13.length ? line13[line13.length - 1].time : '00:00';
